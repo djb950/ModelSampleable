@@ -4,45 +4,40 @@ import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
 
-// Macro implementations build for the host, so the corresponding module is not available when cross-compiling. Cross-compiled tests may still make use of the macro itself in end-to-end tests.
-#if canImport(ModelSampleableMacros)
+
 import ModelSampleableMacros
 
 let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
+    "ModelSampleable": ModelSampleableMacro.self,
 ]
-#endif
+//#endif
 
 final class ModelSampleableTests: XCTestCase {
-    func testMacro() throws {
-        #if canImport(ModelSampleableMacros)
-        assertMacroExpansion(
-            """
-            #stringify(a + b)
-            """,
-            expandedSource: """
-            (a + b, "a + b")
-            """,
-            macros: testMacros
+    
+    func testModelSampleableMacro() {
+        assertMacroExpansion("""
+
+        @ModelSampleable
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+        }
+        """, expandedSource: """
+        
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+        
+            static var sampleData: Model {
+                Model(
+                    stringProperty: "test", intProperty: 0
+                )
+            }
+        }
+        
+        """, macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
     }
 
-    func testMacroWithStringLiteral() throws {
-        #if canImport(ModelSampleableMacros)
-        assertMacroExpansion(
-            #"""
-            #stringify("Hello, \(name)")
-            """#,
-            expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
-            """#,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
-    }
+
 }

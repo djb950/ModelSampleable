@@ -3,31 +3,74 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
-/// Implementation of the `stringify` macro, which takes an expression
-/// of any type and produces a tuple containing the value of that expression
-/// and the source code that produced the value. For example
-///
-///     #stringify(x + y)
-///
-///  will expand to
-///
-///     (x + y, "x + y")
-public struct StringifyMacro: ExpressionMacro {
-    public static func expansion(
-        of node: some FreestandingMacroExpansionSyntax,
-        in context: some MacroExpansionContext
-    ) -> ExprSyntax {
-        guard let argument = node.arguments.first?.expression else {
-            fatalError("compiler bug: the macro does not have any arguments")
+enum ModelSampleableError: Error {
+    case onlyApplicableToStructs
+    
+    var description: String {
+        switch self {
+        case .onlyApplicableToStructs:
+            return "@ModelSampleable can only be applied to a struct"
         }
+    }
+}
 
-        return "(\(argument), \(literal: argument.description))"
+
+public struct ModelSampleableMacro: MemberMacro {
+    public static func expansion(of node: AttributeSyntax, providingMembersOf declaration: some DeclGroupSyntax, in context: some MacroExpansionContext) throws -> [DeclSyntax] {
+        guard let structDecl = declaration.as(StructDeclSyntax.self) else {
+            throw ModelSampleableError.onlyApplicableToStructs
+        }
+        
+        let structName = structDecl.name.text
+        
+        let members = structDecl.memberBlock.members
+        let propertyDecls = members.compactMap { $0.decl.as(VariableDeclSyntax.self) }
+        let bindings = propertyDecls.flatMap { $0.bindings }
+        
+        // get types
+        let typeAnnotations = bindings.compactMap { $0.typeAnnotation }
+        let types = typeAnnotations.compactMap { $0.type.as(IdentifierTypeSyntax.self) }
+        let typeIdentifiers = types.compactMap { $0.name }
+        
+        // get identifiers
+        let patterns = bindings.compactMap { $0.pattern.as(IdentifierPatternSyntax.self) }
+        let identifiers = patterns.compactMap { $0.identifier }
+        
+        var params = ""
+        
+        for index in 0..<identifiers.count {
+            
+            let type = typeIdentifiers[index].text
+            let paramName = identifiers[index].text
+            switch type {
+                case "String":
+                params += "\(paramName): \"test\""
+            case "Int":
+                params += "\(paramName): 0"
+            default:
+                break
+            }
+            if index != identifiers.count - 1 {
+                params += ", "
+            }
+        }
+        
+        let staticData = try VariableDeclSyntax("static var sampleData: \(raw: structName)") {
+            """
+            
+            \(raw: structName)(
+                \(raw: params)
+            )
+            
+            """
+        }
+        return [DeclSyntax(staticData)]
     }
 }
 
 @main
 struct ModelSampleablePlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
-        StringifyMacro.self,
+        ModelSampleableMacro.self
     ]
 }
