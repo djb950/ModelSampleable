@@ -38,6 +38,56 @@ final class ModelSampleableTests: XCTestCase {
         """, macros: testMacros
         )
     }
+    
+    func testModelSampleableMacroWithArrayType() {
+        assertMacroExpansion("""
+        
+        @ModelSampleable
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+        }
+        
+        """, expandedSource: """
 
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+        
+            static var sampleData: Model {
+                Model(stringProperty: "Sample stringProperty", intProperty: 123, arrayProperty: ["Sample arrayProperty"])
+            }
+        }
 
+        """, macros: testMacros)
+    }
+    
+    func testModelSampleableMacroWithObjectType() {
+        assertMacroExpansion("""
+        
+        @ModelSampleable
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let objectType: Object
+        }
+        
+        """, expandedSource: """
+
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let objectType: Object
+        
+            static var sampleData: Model {
+                Model(stringProperty: "Sample stringProperty", intProperty: 123, arrayProperty: ["Sample arrayProperty"], objectType: Object.sampleData)
+            }
+        }
+
+        """, macros: testMacros)
+    }
 }
