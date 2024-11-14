@@ -29,9 +29,7 @@ final class ModelSampleableTests: XCTestCase {
             let intProperty: Int
         
             static var sampleData: Model {
-                Model(
-                    stringProperty: "test", intProperty: 0
-                )
+                Model(stringProperty: "Sample stringProperty", intProperty: 123)
             }
         }
         
@@ -89,5 +87,113 @@ final class ModelSampleableTests: XCTestCase {
         }
 
         """, macros: testMacros)
+    }
+    
+    func testModelSampleableMacroWithDictionaryShorthand() {
+        assertMacroExpansion("""
+        
+        @ModelSampleable
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let dictionaryShorthand: [String: Int]
+        }
+        
+        """, expandedSource: """
+
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let dictionaryShorthand: [String: Int]
+        
+            static var sampleData: Model {
+                Model(stringProperty: "Sample stringProperty", intProperty: 123, arrayProperty: ["Sample arrayProperty"], dictionaryShorthand: ["Sample key": 123])
+            }
+        }
+
+        """, macros: testMacros)
+    }
+    
+    func testModelSampleableMacroWithDictionary() {
+        assertMacroExpansion("""
+        
+        @ModelSampleable
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let dictionary: Dictionary<String, Int>
+        }
+        
+        """, expandedSource: """
+
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let dictionary: Dictionary<String, Int>
+        
+            static var sampleData: Model {
+                Model(stringProperty: "Sample stringProperty", intProperty: 123, arrayProperty: ["Sample arrayProperty"], dictionary: ["Sample key": 123])
+            }
+        }
+
+        """, macros: testMacros)
+    }
+    
+    func testModelSampleableMacroWithSet() {
+        assertMacroExpansion("""
+        
+        @ModelSampleable
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let set: Set<String>
+        }
+        
+        """, expandedSource: """
+
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+            let arrayProperty: [String]
+            let set: Set<String>
+        
+            static var sampleData: Model {
+                Model(stringProperty: "Sample stringProperty", intProperty: 123, arrayProperty: ["Sample arrayProperty"], set: Set(["Sample set value"]))
+            }
+        }
+
+        """, macros: testMacros)
+    }
+    
+    func testModelSampleableMacroStoredProperty() {
+        assertMacroExpansion("""
+
+        @ModelSampleable
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+        
+            let storedProperty = "stored"
+        }
+        """, expandedSource: """
+        
+        struct Model {
+            let stringProperty: String
+            let intProperty: Int
+        
+            let storedProperty = "stored"
+        
+            static var sampleData: Model {
+                Model(stringProperty: "Sample stringProperty", intProperty: 123)
+            }
+        }
+        
+        """, macros: testMacros
+        )
     }
 }

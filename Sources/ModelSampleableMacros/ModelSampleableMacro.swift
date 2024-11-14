@@ -39,6 +39,7 @@ public struct ModelSampleableMacro: MemberMacro {
         for member in structDecl.memberBlock.members {
             guard let varDecl = member.decl.as(VariableDeclSyntax.self),
                   let binding = varDecl.bindings.first,
+                  binding.initializer == nil,
                   let identifier = binding.pattern.as(IdentifierPatternSyntax.self) else {
                 continue
             }
@@ -73,22 +74,35 @@ public struct ModelSampleableMacro: MemberMacro {
             return "123.45"
         case "Bool":
             return "true"
+        case let type where type.hasPrefix("[") && type.hasSuffix("]") && type.contains(":"): // dictionary literal
+            let types = type.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "]", with: "").split(separator: ":")
+            if types.count == 2 {
+                let keySample = determineSampleValue(for: String(types[0]), propertyName: "key")
+                let valueSample = determineSampleValue(for: String(types[1]), propertyName: "value")
+                return "[\(keySample): \(valueSample)]"
+            } else if types.count == 1 {
+                let sample = determineSampleValue(for: String(types[0]), propertyName: propertyName)
+                return "[\(sample): \(sample)]"
+            }
+            return "[:]"
+        case let type where type.hasPrefix("Dictionary<") && type.hasSuffix(">"): // Dictionary type
+            print("type: \(type)")
+        let types = String(type.dropFirst(11).dropLast()).split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            if types.count == 2 {
+                print("types: \(types)")
+                let keySample = determineSampleValue(for: String(types[0]), propertyName: "key")
+                let valueSample = determineSampleValue(for: String(types[1]), propertyName: "value")
+                return "[\(keySample): \(valueSample)]"
+            }
+            return "[:]"
         case let type where type.hasPrefix("[") && type.hasSuffix("]"): // Array type
             let elementType = String(type.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
                 let elementSample = determineSampleValue(for: elementType, propertyName: propertyName)
                 return "[\(elementSample)]"
         case let type where type.hasPrefix("Set<") && type.hasSuffix(">"): // Set type
             let elementType = String(type.dropFirst(4).dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
-                let elementSample = determineSampleValue(for: elementType, propertyName: propertyName)
-                return "Set([\((elementSample))])"
-            case let type where type.hasPrefix("Dictionary<") && type.hasSuffix(">"): // Dictionary type
-            let types = String(type.dropFirst(10).dropLast()).split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                if types.count == 2 {
-                    let keySample = determineSampleValue(for: String(types[0]), propertyName: propertyName)
-                    let valueSample = determineSampleValue(for: String(types[1]), propertyName: propertyName)
-                    return "[\(keySample): \(valueSample)]"
-                }
-                return "[:]"
+                let elementSample = determineSampleValue(for: elementType, propertyName: "set value")
+                return "Set([\(elementSample)])"
             default:
                 // Assume it's another struct with @SampleData
                 return "\(typeName).sampleData"
