@@ -2,4 +2,4 @@
 // https://docs.swift.org/swift-book
 
 @attached(member, names: named(sampleData))
-public macro ModelSampleable() = #externalMacro(module: "ModelSampleableMacros", type: "ModelSampleableMacro")
+public macro ModelSampleable(defaultTypes: [ObjectIdentifier: Any] = [:]) = #externalMacro(module: "ModelSampleableMacros", type: "ModelSampleableMacro")

@@ -33,6 +33,17 @@ public struct ModelSampleableMacro: MemberMacro {
             return []
         }
         
+        guard let argumentDecl = node.arguments?.as(LabeledExprListSyntax.self) else {
+            return []
+        }
+        let defaultValues = argumentDecl.first!.expression.as(DictionaryExprSyntax.self)!.content.as(DictionaryElementListSyntax.self)!
+        var defaultStringValues = [String: String]()
+        for item in defaultValues {
+            guard let key = item.key.as(MemberAccessExprSyntax.self)?.base?.as(DeclReferenceExprSyntax.self)?.baseName.identifier?.name else { continue }
+            guard let value = item.value.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.description else { continue }
+            defaultStringValues[key] = value
+        }
+        
         let structName = structDecl.name.text
         var sampleValues: [String] = []
         

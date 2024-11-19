@@ -173,7 +173,9 @@ final class ModelSampleableTests: XCTestCase {
     func testModelSampleableMacroStoredProperty() {
         assertMacroExpansion("""
 
-        @ModelSampleable
+        @ModelSampleable(defaultValues: [
+                String.Type: "default string value"
+            ])
         struct Model {
             let stringProperty: String
             let intProperty: Int
@@ -195,5 +197,30 @@ final class ModelSampleableTests: XCTestCase {
         
         """, macros: testMacros
         )
+    }
+    
+    func testModelSampleableMacroDefaultArguments() {
+        func testModelSampleableMacro() {
+            assertMacroExpansion("""
+
+            @ModelSampleable
+            struct Model {
+                let stringProperty: String
+                let intProperty: Int
+            }
+            """, expandedSource: """
+            
+            struct Model {
+                let stringProperty: String
+                let intProperty: Int
+            
+                static var sampleData: Model {
+                    Model(stringProperty: "Sample stringProperty", intProperty: 123)
+                }
+            }
+            
+            """, macros: testMacros
+            )
+        }
     }
 }
