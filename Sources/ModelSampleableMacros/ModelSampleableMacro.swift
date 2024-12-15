@@ -40,7 +40,15 @@ public struct ModelSampleableMacro: MemberMacro {
         var defaultStringValues = [String: String]()
         for item in defaultValues {
             guard let key = item.key.as(MemberAccessExprSyntax.self)?.base?.as(DeclReferenceExprSyntax.self)?.baseName.identifier?.name else { continue }
-            guard let value = item.value.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.description else { continue }
+            guard let value = switch key {
+            case "String":
+                item.value.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.description
+            case "Int":
+                item.value.as(IntegerLiteralExprSyntax.self)?.literal.description
+            default:
+                nil
+
+            }  else { continue }
             defaultStringValues[key] = value
         }
         
@@ -57,7 +65,7 @@ public struct ModelSampleableMacro: MemberMacro {
 
             let propertyName = identifier.identifier.text
 
-            let sampleValue = determineSampleValue(for: binding.typeAnnotation?.type.description.trimmingCharacters(in: .whitespacesAndNewlines) ?? "", propertyName: propertyName)
+            let sampleValue = determineSampleValue(for: binding.typeAnnotation?.type.description.trimmingCharacters(in: .whitespacesAndNewlines) ?? "", propertyName: propertyName, defaultValues: defaultStringValues)
 
             sampleValues.append("\(propertyName): \(sampleValue)")
         }
@@ -73,13 +81,19 @@ public struct ModelSampleableMacro: MemberMacro {
         return [sampleDataSyntax]
     }
     
-    private static func determineSampleValue(for typeName: String, propertyName: String) -> String {
+    private static func determineSampleValue(for typeName: String, propertyName: String, defaultValues: [String: String] = [:]) -> String {
         switch typeName {
         case "String":
+            if let defaultStringValue = defaultValues["String"] {
+                return "\"\(defaultStringValue)\""
+            }
             return "\"Sample \(propertyName)\""
-        case let type where type.hasSuffix("?") || type.hasPrefix("Optional<"):
+        case let type where type.hasSuffix("?") || type.hasPrefix("Optional<"): // TODO: allow custom parameter to macro to determine if optionals should default to nil or the underlying type instead
             return "nil"
         case "Int":
+            if let defaultIntValue = defaultValues["Int"] {
+                return "\(defaultIntValue)"
+            }
             return "123"
         case "Double":
             return "123.45"

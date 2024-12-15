@@ -174,7 +174,8 @@ final class ModelSampleableTests: XCTestCase {
         assertMacroExpansion("""
 
         @ModelSampleable(defaultValues: [
-                String.Type: "default string value"
+                String.Type: "default string value",
+                Int.Type: 10
             ])
         struct Model {
             let stringProperty: String
@@ -191,7 +192,7 @@ final class ModelSampleableTests: XCTestCase {
             let storedProperty = "stored"
         
             static var sampleData: Model {
-                Model(stringProperty: "Sample stringProperty", intProperty: 123)
+                Model(stringProperty: "default string value", intProperty: 10)
             }
         }
         
